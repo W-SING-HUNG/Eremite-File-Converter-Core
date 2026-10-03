@@ -1,6 +1,6 @@
 # Third-party distribution inventory (1.1.2 source-first)
 
-This inventory distinguishes what the File Converter Core tarball contains from software installed or supplied separately. License identifiers come from the committed npm lockfile and locally inspected Windows x64 dependency packages. They do not relicense third-party work. **VERIFIED FOR PUBLIC DISTRIBUTION for Supplier tgz + consumer obtains dependencies from npm**, as confirmed by the product owner.
+This inventory distinguishes what the File Converter Core tarball contains from software installed or supplied separately. License identifiers come from the committed npm lockfile and locally inspected Windows x64 dependency packages. They do not relicense third-party work. The Supplier tarball and the npm-installed dependency closure are separate distribution categories.
 
 | Component | Category | License / evidence | Distribution note |
 | --- | --- | --- | --- |
@@ -16,4 +16,4 @@ This inventory distinguishes what the File Converter Core tarball contains from 
 | Pandoc | EXTERNAL PREREQUISITE | Installed Pandoc distribution terms | Optional separately installed executable. No Pandoc files are bundled. |
 | LibreOffice | EXTERNAL PREREQUISITE | Installed LibreOffice distribution terms | Optional separately installed executable. No LibreOffice files are bundled. |
 
-The published Windows x64 `@img/sharp-win32-x64` README is the immediate source for its native-library list: aom, cairo, cgif, expat, fontconfig, freetype, fribidi, glib, harfbuzz, highway, lcms, libarchive, libexif, libffi, libheif, libimagequant, libnsgif, libpng, librsvg, libtiff, libultrahdr, libvips, libwebp, libxml2, mozjpeg, pango, pixman, proxy-libintl, and zlib-ng. Several use LGPL, MPL, or other non-Apache licenses. The product owner confirmed the scoped distribution conclusion above; installed dependencies retain their own licenses and notices. The Supplier tarball itself contains no `node_modules` or these native libraries; a consumer obtains them through npm.
+The published Windows x64 `@img/sharp-win32-x64` README is the immediate source for its native-library list: aom, cairo, cgif, expat, fontconfig, freetype, fribidi, glib, harfbuzz, highway, lcms, libarchive, libexif, libffi, libheif, libimagequant, libnsgif, libpng, librsvg, libtiff, libultrahdr, libvips, libwebp, libxml2, mozjpeg, pango, pixman, proxy-libintl, and zlib-ng. Several use LGPL, MPL, or other non-Apache licenses. Installed dependencies retain their own licenses and notices. The Supplier tarball itself contains no `node_modules` or these native libraries; a consumer obtains them through npm.
