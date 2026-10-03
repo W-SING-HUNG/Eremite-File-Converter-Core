@@ -1,0 +1,64 @@
+{
+  "name": "file-converter-core",
+  "version": "1.1.2",
+  "private": true,
+  "type": "module",
+  "description": "Headless, testable file-conversion tool core (P1-P4: Sharp images, Pandoc structured docs, LibreOffice Office->PDF). Host Contract v1.1. Not an Eremite product.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "bin": {
+    "file-converter-core": "dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "tool-contract.json",
+    "THIRD-PARTY-NOTICES.md",
+    "NOTICE"
+  ],
+  "scripts": {
+    "build:native": "node tools/build-native.mjs",
+    "build": "node tools/clean-dist.mjs && npm run build:native && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "cli": "tsx src/cli/index.ts",
+    "harness:backend": "tsx dev-harness/backend/server.ts",
+    "harness:frontend": "vite --config dev-harness/frontend/vite.config.ts",
+    "harness:build": "vite build --config dev-harness/frontend/vite.config.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "sharp": "0.35.4"
+  },
+  "optionalExternalEngines": {
+    "pandoc": ">=3.1 (external executable, --sandbox)",
+    "libreoffice": ">=7.6 (external executable, headless)"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/W-SING-HUNG/Eremite-File-Converter-Core"
+  },
+  "homepage": "https://github.com/W-SING-HUNG/Eremite-File-Converter-Core",
+  "bugs": {
+    "url": "https://github.com/W-SING-HUNG/Eremite-File-Converter-Core/issues"
+  }
+}

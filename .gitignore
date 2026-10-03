@@ -1,0 +1,49 @@
+# dependencies
+node_modules/
+
+# build output (regenerable via npm run build / harness:build)
+dist/
+dev-harness/frontend/dist/
+
+# QA / black-box / acceptance artifacts — one-time validation output, never commit
+blackbox/
+p2-blackbox/
+*-blackbox/
+qa-harness/
+qa-out/
+evidence/
+screenshots/
+tools/experiments/
+
+# temp conversion / staging outputs
+.fctmp-*
+.fc-qa-*
+harness-out/
+publish-out/
+race-out/
+version-out/
+
+# editor / OS / temp
+*.log
+*.tmp
+*.bak
+*.backup
+*.old
+.DS_Store
+Thumbs.db
+
+# Phase 3/4 QA scratch (dot-prefixed experiment scripts, captured test output)
+.lo-*
+.p4-*
+.p3-*
+.fulltest.txt
+.caps.json
+.cleanup.ps1
+lo-profile/
+staging/
+*-blackbox-out/
+
+# Local preparation and acceptance output is excluded from source publication.
+.release-evidence/
+.qa/
+.cache/

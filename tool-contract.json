@@ -1,0 +1,431 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eremite.local/contracts/file-converter/v1.1/canonical-tool-contract-v1.1.json",
+  "title": "File Converter Host Contract v1.1",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/successResponse" },
+    { "$ref": "#/$defs/failureResponse" }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "format": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formatId", "mediaType", "extension"],
+      "properties": {
+        "formatId": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{0,63}$"
+        },
+        "mediaType": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 127
+        },
+        "extension": {
+          "type": "string",
+          "pattern": "^\\.[a-z0-9]{1,16}$"
+        }
+      }
+    },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{0,63}$"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        }
+      }
+    },
+    "warning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code"],
+      "properties": {
+        "code": {
+          "enum": [
+            "FC_DECLARED_TYPE_MISMATCH",
+            "FC_EXTENSION_MISMATCH",
+            "FC_FALLBACK_USED",
+            "FC_METADATA_DROPPED",
+            "FC_OUTPUT_NORMALIZED",
+            "FC_LOSSY_REENCODE",
+            "FC_CMYK_NO_ICC",
+            "FC_ALPHA_FLATTENED"
+          ]
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "stage", "retryable"],
+      "properties": {
+        "code": {
+          "enum": [
+            "FC_INVALID_REQUEST",
+            "FC_INPUT_NOT_FOUND",
+            "FC_INPUT_NOT_REGULAR_FILE",
+            "FC_INPUT_TOO_LARGE",
+            "FC_INPUT_SIZE_MISMATCH",
+            "FC_INPUT_HASH_MISMATCH",
+            "FC_SOURCE_UNSUPPORTED",
+            "FC_SOURCE_CORRUPT",
+            "FC_TARGET_UNSUPPORTED",
+            "FC_CONVERSION_UNSUPPORTED",
+            "FC_DEPENDENCY_MISSING",
+            "FC_DEPENDENCY_INCOMPATIBLE",
+            "FC_ENGINE_START_FAILED",
+            "FC_ENGINE_FAILED",
+            "FC_TIMEOUT",
+            "FC_RESOURCE_LIMIT",
+            "FC_OUTPUT_MISSING",
+            "FC_OUTPUT_NOT_REGULAR_FILE",
+            "FC_OUTPUT_EMPTY",
+            "FC_OUTPUT_TOO_LARGE",
+            "FC_OUTPUT_TYPE_MISMATCH",
+            "FC_OUTPUT_VALIDATION_FAILED",
+            "FC_IO_FAILED",
+            "FC_INTERNAL_ERROR",
+            "FC_UNSAFE_INPUT_PATH",
+            "FC_SOURCE_CHANGED",
+            "FC_ENCRYPTED_PROTECTED",
+            "FC_MACRO_UNSUPPORTED",
+            "FC_EXTERNAL_REL_BLOCKED",
+            "FC_RESOURCE_BUNDLE_REQUIRED",
+            "FC_OUTPUT_CONFLICT",
+            "FC_UNSUPPORTED_FEATURE"
+          ]
+        },
+        "stage": {
+          "enum": [
+            "request",
+            "input",
+            "detection",
+            "engine",
+            "output",
+            "resource",
+            "internal",
+            "workspace"
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "contractVersion",
+        "invocationId",
+        "workspace",
+        "source",
+        "conversion",
+        "limits"
+      ],
+      "properties": {
+        "kind": {
+          "const": "request"
+        },
+        "contractVersion": {
+          "const": 1
+        },
+        "invocationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "workspace": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rootPath", "inputPath", "outputPath"],
+          "properties": {
+            "rootPath": {
+              "type": "string",
+              "minLength": 1
+            },
+            "inputPath": {
+              "type": "string",
+              "minLength": 1
+            },
+            "outputPath": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "displayName",
+            "declaredMediaType",
+            "byteSize",
+            "sha256"
+          ],
+          "properties": {
+            "displayName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "declaredMediaType": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 127
+            },
+            "byteSize": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        },
+        "conversion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["conversionId", "target", "enginePlan"],
+          "properties": {
+            "conversionId": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9.-]{0,95}$"
+            },
+            "target": {
+              "$ref": "#/$defs/format"
+            },
+            "enginePlan": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["primaryEngineId", "fallbackEngineId"],
+              "properties": {
+                "primaryEngineId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "fallbackEngineId": {
+                  "type": ["string", "null"],
+                  "maxLength": 64
+                }
+              }
+            }
+          }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "maxInputBytes",
+            "maxOutputBytes",
+            "maxWorkspaceBytes",
+            "timeoutMs"
+          ],
+          "properties": {
+            "maxInputBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 536870912
+            },
+            "maxOutputBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 536870912
+            },
+            "maxWorkspaceBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1073741824
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 900000
+            }
+          }
+        }
+      }
+    },
+    "successResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "contractVersion",
+        "invocationId",
+        "status",
+        "coreVersion",
+        "sourceSha256",
+        "detectedSource",
+        "target",
+        "output",
+        "engine",
+        "fallback",
+        "durationMs",
+        "warnings"
+      ],
+      "properties": {
+        "kind": {
+          "const": "response"
+        },
+        "contractVersion": {
+          "const": 1
+        },
+        "invocationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "const": "succeeded"
+        },
+        "coreVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "sourceSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "detectedSource": {
+          "$ref": "#/$defs/format"
+        },
+        "target": {
+          "$ref": "#/$defs/format"
+        },
+        "output": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["byteSize", "sha256", "detectedType"],
+          "properties": {
+            "byteSize": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "detectedType": {
+              "$ref": "#/$defs/format"
+            }
+          }
+        },
+        "engine": {
+          "$ref": "#/$defs/engine"
+        },
+        "fallback": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["used"],
+              "properties": {
+                "used": {
+                  "const": false
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["used", "primaryEngineId", "reasonCode"],
+              "properties": {
+                "used": {
+                  "const": true
+                },
+                "primaryEngineId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "reasonCode": {
+                  "enum": [
+                    "PRIMARY_UNAVAILABLE",
+                    "PRIMARY_INCOMPATIBLE",
+                    "PRIMARY_FAILED"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/warning"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "failureResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "contractVersion",
+        "invocationId",
+        "status",
+        "coreVersion",
+        "durationMs",
+        "warnings",
+        "errors"
+      ],
+      "properties": {
+        "kind": {
+          "const": "response"
+        },
+        "contractVersion": {
+          "const": 1
+        },
+        "invocationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "const": "failed"
+        },
+        "coreVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/warning"
+          },
+          "uniqueItems": true
+        },
+        "errors": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/error"
+          }
+        }
+      }
+    }
+  }
+}
