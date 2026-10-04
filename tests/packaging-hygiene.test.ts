@@ -121,6 +121,7 @@ describe('packaging regression (dist/** + npm pack manifest)', () => {
       p === 'package.json' ||
       p === 'README.md' ||
       p === 'LICENSE' ||
+      p === 'NOTICE' ||
       p === 'THIRD-PARTY-NOTICES.md';
 
     expect(files.filter((p) => !allowed(p))).toEqual([]);
@@ -129,6 +130,7 @@ describe('packaging regression (dist/** + npm pack manifest)', () => {
     expect(files).toContain('dist/cli/index.js');
     expect(files).toContain('tool-contract.json');
     expect(files).toContain('LICENSE');
+    expect(files).toContain('NOTICE');
     expect(files).toContain('THIRD-PARTY-NOTICES.md');
     // `npm pack` spawns an external process; during a full parallel suite it can
     // exceed the default per-test budget, so it gets an explicit generous one.
