@@ -8,7 +8,7 @@ import { tmpDir } from './helpers/fixtures.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(here, '..');
-const NODE = 'D:\\Node js\\node.exe';
+const NODE = process.execPath;
 const SERVER = path.join(ROOT, 'dev-harness', 'backend', 'server.ts');
 
 function request(port: number, pathname: string, opts: { token?: string; host?: string; method?: string; body?: unknown } = {}): Promise<{ status: number; body: any }> {

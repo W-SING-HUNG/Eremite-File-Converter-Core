@@ -8,7 +8,7 @@ import { makeHostHarness, type HostHarness } from './helpers/host-harness.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(here, '..');
-const NODE = 'D:\\Node js\\node.exe';
+const NODE = process.execPath;
 const CLI = path.join(ROOT, 'src', 'cli', 'index.ts');
 
 function run(args: string[], bin: string = NODE): Promise<{ code: number; stdout: string; stderr: string }> {
