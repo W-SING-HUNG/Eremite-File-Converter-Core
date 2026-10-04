@@ -1,0 +1,123 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+defaults:
+  run:
+    shell: pwsh
+jobs:
+  verify:
+    name: Verify
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: "Set up Node.js"
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24.15.0"
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: "Verify Node.js version"
+        run: |
+          $nodeVersion = node --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Output $nodeVersion
+          npm.cmd --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($nodeVersion -cne 'v24.15.0') { throw 'Node.js 24.15.0 is required' }
+      - name: "Check native compiler"
+        run: |
+          $framework = Join-Path $env:WINDIR 'Microsoft.NET/Framework64'
+          $compilers = @(Get-ChildItem -LiteralPath $framework -Directory | Where-Object Name -Like 'v4*' | ForEach-Object { Join-Path $_.FullName 'csc.exe' } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf })
+          if ($compilers.Count -eq 0) { throw 'RUNNER_PREREQUISITE_BLOCKER: .NET Framework v4 csc.exe is required' }
+      - name: "Provision real Pandoc for existing tests"
+        run: |
+          $pandocRoot = Join-Path $env:RUNNER_TEMP 'eremite-ci-pandoc'
+          New-Item -ItemType Directory -Path $pandocRoot -ErrorAction Stop | Out-Null
+          $archive = Join-Path $pandocRoot 'pandoc-3.12-windows-x86_64.zip'
+          Invoke-WebRequest -Uri 'https://github.com/jgm/pandoc/releases/download/3.12/pandoc-3.12-windows-x86_64.zip' -OutFile $archive
+          $digest = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($digest -cne '2a77ebc2517d13e95056e76b1cd5b574cfe958ac61aa6058117d80c22ca19b79') { throw 'Pandoc asset SHA-256 mismatch' }
+          Expand-Archive -LiteralPath $archive -DestinationPath (Join-Path $pandocRoot 'runtime')
+          $executables = @(Get-ChildItem -LiteralPath (Join-Path $pandocRoot 'runtime') -Filter pandoc.exe -File -Recurse)
+          if ($executables.Count -ne 1) { throw 'Expected exactly one official Pandoc executable' }
+          $executables[0].DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: "Provision real LibreOffice for existing tests"
+        run: |
+          $libreOfficeRoot = Join-Path $env:RUNNER_TEMP 'eremite-ci-libreoffice'
+          New-Item -ItemType Directory -Path $libreOfficeRoot -ErrorAction Stop | Out-Null
+          $installer = Join-Path $libreOfficeRoot 'LibreOffice_26.2.6.2_Win_x86-64.msi'
+          Invoke-WebRequest -Uri 'https://downloadarchive.documentfoundation.org/libreoffice/old/26.2.6.2/win/x86_64/LibreOffice_26.2.6.2_Win_x86-64.msi' -OutFile $installer
+          $digest = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($digest -cne '788ce7d4b56460357f57552cb8cd848e8f2254f28f6e51fa61e0c65a18096373') { throw 'LibreOffice asset SHA-256 mismatch' }
+          $installation = Start-Process -FilePath msiexec.exe -ArgumentList @('/i', ('"' + $installer + '"'), '/qn', '/norestart', 'REBOOT=ReallySuppress') -WindowStyle Hidden -Wait -PassThru
+          if ($installation.ExitCode -ne 0) { throw ('LibreOffice installation failed: ' + $installation.ExitCode) }
+          $program = Join-Path $env:ProgramFiles 'LibreOffice/program'
+          if (-not (Test-Path -LiteralPath (Join-Path $program 'soffice.com') -PathType Leaf)) { throw 'LibreOffice executable missing' }
+          $program | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: "Verify real document engines"
+        run: |
+          $pandocOutput = @(pandoc --version)
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $pandocOutput | Write-Output
+          if ($pandocOutput.Count -eq 0 -or $pandocOutput[0] -cne 'pandoc 3.12') { throw 'Pandoc 3.12 is required for existing tests' }
+          $officeOutput = @(soffice.com --version)
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $officeOutput | Write-Output
+          if ($officeOutput.Count -eq 0 -or $officeOutput[0] -notmatch '^LibreOffice 26\.2\.6\.2(?:\s|$)') { throw 'LibreOffice 26.2.6.2 is required for existing tests' }
+      - name: "Install locked dependencies"
+        run: |
+          npm.cmd ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --exit-code -- package-lock.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Typecheck
+        run: |
+          npm.cmd run typecheck
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build
+        run: |
+          npm.cmd run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Test
+        run: |
+          npm.cmd test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: "Inspect package file list"
+        run: |
+          npm.cmd pack --dry-run
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: "Verify tracked source is unchanged"
+        run: |
+          git diff --exit-code -- package-lock.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --exit-code
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: "Clean runner temporary files"
+        if: "always()"
+        run: |
+          $temporaryRoot = [IO.Path]::GetFullPath($env:RUNNER_TEMP).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+          $targets = @((Join-Path $env:RUNNER_TEMP 'eremite-ci-pandoc'), (Join-Path $env:RUNNER_TEMP 'eremite-ci-libreoffice'))
+          foreach ($target in $targets) {
+            $absolute = [IO.Path]::GetFullPath($target)
+            if (-not $absolute.StartsWith($temporaryRoot, [StringComparison]::OrdinalIgnoreCase)) { throw 'Cleanup target outside runner temp' }
+            if (Test-Path -LiteralPath $absolute) {
+              if (@(Get-ChildItem -LiteralPath $absolute -Recurse -Force -Attributes ReparsePoint).Count -ne 0) { throw 'Refuse redirected cleanup target' }
+              Remove-Item -LiteralPath $absolute -Recurse -Force -ErrorAction Stop
+            }
+          }
