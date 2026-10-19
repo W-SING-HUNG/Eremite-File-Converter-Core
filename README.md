@@ -112,6 +112,12 @@ list after building; `npm.cmd pack` creates a new local archive. A new archive
 does not replace the Host artifact automatically. No npm package has been
 published; `private: true` guards against accidental npm publication.
 
+## Public information checks
+
+Run the verification command and the [public information checks](docs/public-information.md)
+before submitting source or prepared package bytes. License and author attribution
+remain part of the public record.
+
 ## Contributing, support and security
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests and contract compatibility,
