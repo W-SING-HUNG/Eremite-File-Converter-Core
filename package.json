@@ -32,7 +32,11 @@
     "cli": "tsx src/cli/index.ts",
     "harness:backend": "tsx dev-harness/backend/server.ts",
     "harness:frontend": "vite --config dev-harness/frontend/vite.config.ts",
-    "harness:build": "vite build --config dev-harness/frontend/vite.config.ts"
+    "harness:build": "vite build --config dev-harness/frontend/vite.config.ts",
+    "check:public-exposure": "node scripts/check-public-exposure.mjs --include-untracked",
+    "check:public-delivery": "node scripts/check-public-exposure.mjs --staged --check-identity",
+    "test:public-exposure": "node tests/public-exposure.test.mjs && node tests/public-bytes.test.mjs",
+    "verify": "npm run check:public-exposure && npm run test:public-exposure && npm run typecheck && npm run build && npm test"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
